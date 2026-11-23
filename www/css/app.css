@@ -183,3 +183,4 @@ body.theme-light .tk-k { color: #a626a4; } body.theme-light .tk-s { color: #50a1
 @media (max-width: 400px) { #top .ib { width: 34px; } #top .sym { font-size: 14px; } }
 
 body.trading .legend-main + .legend-ind, body.trading .legend-main { margin-bottom: 0; } body.trading .legend-main { margin-bottom: 44px; }
+body.replaying .go-last { bottom: 88px; }

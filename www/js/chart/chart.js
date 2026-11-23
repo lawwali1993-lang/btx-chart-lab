@@ -413,7 +413,7 @@ export class Chart {
       for (const ind of this.indicators) {
         if (!ind.res || ind.visible === false || (ind.paneId || 'main') !== p.id) continue;
         for (const pl of ind.res.out.plots) {
-          if (pl.display === 'none' || (ind.hidden && ind.hidden[pl.id])) continue;
+          if (!(pl.display & 4) || !(pl.display & 1) || (ind.hidden && ind.hidden[pl.id])) continue;
           const i = Math.min(this.n - 1, this.i1);
           let v = NaN; for (let k = i; k >= Math.max(this.i0, i - 3); k--) { v = plotVal(ind, pl, k); if (isNum(v)) break; }
           if (!isNum(v)) continue;
@@ -587,7 +587,7 @@ export class Chart {
       if (!ind.res || ind.visible === false) { r.vals.innerHTML = ind.error ? '<i class="dn">خطأ</i>' : ''; continue; }
       const parts = [];
       for (const p of ind.res.out.plots) {
-        if (p.display === 'none' || (ind.hidden && ind.hidden[p.id])) continue;
+        if (!(p.display & 8) || (ind.hidden && ind.hidden[p.id])) continue;
         const v = plotVal(ind, p, i);
         const ri = i - ind.offset - (p.offset || 0);
         const col = css(p.colors ? p.colors[ri] ?? p.colors0 : p.colors0) || '#888';

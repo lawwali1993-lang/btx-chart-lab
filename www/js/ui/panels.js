@@ -263,6 +263,8 @@ export function initPanels(app) {
       const lot = h('input', { type: 'number', step: 0.01, min: 0.01, value: app.state.trade.lots, onchange: (e) => { app.state.trade.lots = Math.max(0.01, A.normLots(e.target.value)); e.target.value = app.state.trade.lots; app.saveStateSoon(); app.updateTradeLines(); } });
       bar.append(h('button', { class: 'sell', onclick: () => P.order(-1) }, h('small', {}, 'SELL'), h('b', { class: 'bidv' }, '')), lot, h('button', { class: 'buy', onclick: () => P.order(1) }, h('small', {}, 'BUY'), h('b', { class: 'askv' }, '')), h('div', { class: 'spr' }, ''));
     }
+    const li = bar.querySelector('input');
+    if (li && document.activeElement !== li) li.value = app.state.trade.lots;
     bar.querySelector('.bidv').textContent = isFinite(bid) ? bid.toFixed(spec.digits) : '—';
     bar.querySelector('.askv').textContent = isFinite(ask) ? ask.toFixed(spec.digits) : '—';
     bar.querySelector('.spr').textContent = (spec.spread || 0) + ' pts';

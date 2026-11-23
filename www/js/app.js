@@ -523,6 +523,7 @@ class App {
     for (const x of this.inds) x.rt = null;
     this.recomputeAll();
     this.sheets.replayBar(true);
+    document.body.classList.add('replaying');
     $('#btnReplay').classList.add('on');
     this.panels.refreshTrade();
     toast('وضع الإعادة: اضغط ▶ للتشغيل أو ⏭ للتقدم شمعة');
@@ -533,6 +534,7 @@ class App {
     this.replay.start = undefined;
     this.chart.replayPick = false;
     this.sheets.replayBar(false);
+    document.body.classList.remove('replaying');
     $('#btnReplay').classList.remove('on');
     if (!silent) { for (const x of this.inds) x.rt = null; this.updateView(true); this.recomputeAll(); this.chart.scrollToEnd(); }
     this.panels.refreshTrade();

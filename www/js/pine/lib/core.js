@@ -634,7 +634,7 @@ Object.assign(K, {
   'alert.freq_all': 'all', 'alert.freq_once_per_bar': 'once_per_bar', 'alert.freq_once_per_bar_close': 'once_per_bar_close',
   'format.inherit': 'inherit', 'format.price': 'price', 'format.volume': 'volume', 'format.percent': 'percent', 'format.mintick': 'mintick',
   'scale.right': 'right', 'scale.left': 'left', 'scale.none': 'none',
-  'display.all': 'all', 'display.none': 'none', 'display.data_window': 'data_window', 'display.pane': 'pane', 'display.price_scale': 'price_scale', 'display.status_line': 'status_line',
+  'display.all': 15, 'display.none': 0, 'display.pane': 1, 'display.data_window': 2, 'display.price_scale': 4, 'display.status_line': 8,
   'font.family_default': 'default', 'font.family_monospace': 'monospace',
   'text.align_left': 'left', 'text.align_center': 'center', 'text.align_right': 'right', 'text.align_top': 'top', 'text.align_bottom': 'bottom', 'text.wrap_auto': 'auto', 'text.wrap_none': 'none',
   'text.format_bold': 'bold', 'text.format_italic': 'italic', 'text.format_none': 'none',

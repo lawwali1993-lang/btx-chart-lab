@@ -2,6 +2,8 @@
 import { B, def, defc, defv, K, isNa, truthy, num, colorWithTransp, RuntimeErr } from './registry.js';
 
 const DEF_PLOT = '#2962ffff';
+// display flags: pane=1, data_window=2, price_scale=4, status_line=8 (all=15)
+export function dispFlags(d) { if (d === undefined || d === null || (typeof d === 'number' && isNaN(d))) return 15; if (typeof d === 'number') return d; return d === 'none' ? 0 : 15; }
 
 function setColor(rec, key, i, c) {
   // per-bar colors stored lazily: rec[key+'0'] holds the first color; array allocated when colors vary
@@ -31,7 +33,7 @@ function reg(rt, list, factory) {
 const PLOT_P = ['series', 'title', 'color', 'linewidth', 'style', 'trackprice', 'histbase', 'offset', 'join', 'editable', 'show_last', 'display', 'format', 'precision', 'force_overlay'];
 def('plot', PLOT_P, (rt, s, series, title, color, lw, style, track, histbase, offset, join, editable, showLast, display, format, precision) => {
   if (rt.isSub) return { __plot: -1 };
-  const r = reg(rt, 'plots', () => ({ kind: 'plot', title: title ?? 'Plot', style: typeof style === 'string' ? style : 'line', lineWidth: num(lw, 1) || 1, values: rt.newArr(), offset: num(offset, 0) || 0, trackprice: truthy(track), histbase: num(histbase, 0) || 0, join: truthy(join), display: display || 'all', format, precision, showLast: showLast }));
+  const r = reg(rt, 'plots', () => ({ kind: 'plot', title: title ?? 'Plot', style: typeof style === 'string' ? style : 'line', lineWidth: num(lw, 1) || 1, values: rt.newArr(), offset: num(offset, 0) || 0, trackprice: truthy(track), histbase: num(histbase, 0) || 0, join: truthy(join), display: dispFlags(display), format, precision, showLast: showLast }));
   let v = series;
   if (typeof v === 'boolean') v = v ? 1 : 0;
   r.values[rt.i] = typeof v === 'number' ? v : NaN;
@@ -41,7 +43,7 @@ def('plot', PLOT_P, (rt, s, series, title, color, lw, style, track, histbase, of
 const SHAPE_P = ['series', 'title', 'style', 'location', 'color', 'offset', 'text', 'textcolor', 'editable', 'size', 'show_last', 'display', 'format', 'precision', 'force_overlay'];
 def('plotshape', SHAPE_P, (rt, s, series, title, style, loc, color, offset, text, textcolor, editable, size, showLast, display) => {
   if (rt.isSub) return NaN;
-  const r = reg(rt, 'shapes', () => ({ kind: 'shape', title: title ?? 'Shape', style: style || 'xcross', location: loc || 'abovebar', values: rt.newArr(), offset: num(offset, 0) || 0, text: text ?? '', size: size || 'auto', display: display || 'all' }));
+  const r = reg(rt, 'shapes', () => ({ kind: 'shape', title: title ?? 'Shape', style: style || 'xcross', location: loc || 'abovebar', values: rt.newArr(), offset: num(offset, 0) || 0, text: text ?? '', size: size || 'auto', display: dispFlags(display) }));
   const on = typeof series === 'boolean' ? series : !isNa(series) && series !== 0 && series !== false;
   r.values[rt.i] = on ? (r.location === 'absolute' ? num(series) : 1) : NaN;
   setColor(r, 'colors', rt.i, applyTransp(rt, color === undefined ? DEF_PLOT : color));
@@ -52,7 +54,7 @@ def('plotshape', SHAPE_P, (rt, s, series, title, style, loc, color, offset, text
 const CHAR_P = ['series', 'title', 'char', 'location', 'color', 'offset', 'text', 'textcolor', 'editable', 'size', 'show_last', 'display', 'format', 'precision', 'force_overlay'];
 def('plotchar', CHAR_P, (rt, s, series, title, ch, loc, color, offset, text, textcolor, editable, size, showLast, display) => {
   if (rt.isSub) return NaN;
-  const r = reg(rt, 'shapes', () => ({ kind: 'char', title: title ?? 'Char', char: ch || '★', location: loc || 'abovebar', values: rt.newArr(), offset: num(offset, 0) || 0, text: text ?? '', size: size || 'auto', display: display || 'all' }));
+  const r = reg(rt, 'shapes', () => ({ kind: 'char', title: title ?? 'Char', char: ch || '★', location: loc || 'abovebar', values: rt.newArr(), offset: num(offset, 0) || 0, text: text ?? '', size: size || 'auto', display: dispFlags(display) }));
   const on = typeof series === 'boolean' ? series : !isNa(series) && series !== 0;
   r.values[rt.i] = on ? (r.location === 'absolute' ? num(series) : 1) : NaN;
   setColor(r, 'colors', rt.i, applyTransp(rt, color === undefined ? DEF_PLOT : color));
@@ -61,7 +63,7 @@ def('plotchar', CHAR_P, (rt, s, series, title, ch, loc, color, offset, text, tex
 });
 def('plotarrow', ['series', 'title', 'colorup', 'colordown', 'offset', 'minheight', 'maxheight', 'editable', 'show_last', 'display', 'format', 'precision', 'force_overlay'], (rt, s, series, title, cu, cd, offset, minh, maxh, editable, showLast, display) => {
   if (rt.isSub) return NaN;
-  const r = reg(rt, 'shapes', () => ({ kind: 'arrow', title: title ?? 'Arrow', values: rt.newArr(), offset: num(offset, 0) || 0, minh: num(minh, 5), maxh: num(maxh, 100), display: display || 'all' }));
+  const r = reg(rt, 'shapes', () => ({ kind: 'arrow', title: title ?? 'Arrow', values: rt.newArr(), offset: num(offset, 0) || 0, minh: num(minh, 5), maxh: num(maxh, 100), display: dispFlags(display) }));
   const v = num(series);
   r.values[rt.i] = v === 0 ? NaN : v;
   setColor(r, 'colors', rt.i, v >= 0 ? (cu === undefined ? '#4caf50e6' : cu) : (cd === undefined ? '#f23645e6' : cd));
@@ -69,7 +71,7 @@ def('plotarrow', ['series', 'title', 'colorup', 'colordown', 'offset', 'minheigh
 });
 def('plotcandle', ['open', 'high', 'low', 'close', 'title', 'color', 'wickcolor', 'editable', 'show_last', 'bordercolor', 'display', 'format', 'precision', 'force_overlay'], (rt, s, o, h, l, c, title, color, wick, editable, showLast, border, display) => {
   if (rt.isSub) return NaN;
-  const r = reg(rt, 'candles', () => ({ kind: 'candle', title: title ?? 'Candles', o: rt.newArr(), h: rt.newArr(), l: rt.newArr(), c: rt.newArr(), display: display || 'all' }));
+  const r = reg(rt, 'candles', () => ({ kind: 'candle', title: title ?? 'Candles', o: rt.newArr(), h: rt.newArr(), l: rt.newArr(), c: rt.newArr(), display: dispFlags(display) }));
   r.o[rt.i] = num(o); r.h[rt.i] = num(h); r.l[rt.i] = num(l); r.c[rt.i] = num(c);
   setColor(r, 'colors', rt.i, color);
   setColor(r, 'wicks', rt.i, wick);
@@ -78,14 +80,14 @@ def('plotcandle', ['open', 'high', 'low', 'close', 'title', 'color', 'wickcolor'
 });
 def('plotbar', ['open', 'high', 'low', 'close', 'title', 'color', 'editable', 'show_last', 'display', 'format', 'precision', 'force_overlay'], (rt, s, o, h, l, c, title, color, editable, showLast, display) => {
   if (rt.isSub) return NaN;
-  const r = reg(rt, 'candles', () => ({ kind: 'bar', title: title ?? 'Bars', o: rt.newArr(), h: rt.newArr(), l: rt.newArr(), c: rt.newArr(), display: display || 'all' }));
+  const r = reg(rt, 'candles', () => ({ kind: 'bar', title: title ?? 'Bars', o: rt.newArr(), h: rt.newArr(), l: rt.newArr(), c: rt.newArr(), display: dispFlags(display) }));
   r.o[rt.i] = num(o); r.h[rt.i] = num(h); r.l[rt.i] = num(l); r.c[rt.i] = num(c);
   setColor(r, 'colors', rt.i, color);
   return NaN;
 });
 def('hline', ['price', 'title', 'color', 'linestyle', 'linewidth', 'editable', 'display'], (rt, s, price, title, color, style, lw, editable, display) => {
   if (rt.isSub) return { __hline: -1 };
-  const r = reg(rt, 'hlines', () => ({ kind: 'hline', title: title ?? 'Level', display: display || 'all' }));
+  const r = reg(rt, 'hlines', () => ({ kind: 'hline', title: title ?? 'Level', display: dispFlags(display) }));
   r.price = num(price); r.color = applyTransp(rt, color === undefined ? '#787b86ff' : color); r.style = style || 'dashed'; r.lineWidth = num(lw, 1) || 1;
   return { __hline: r.id };
 });

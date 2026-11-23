@@ -91,7 +91,7 @@ export function drawFills(ch, ctx, pane, ind) {
 export function drawPlots(ch, ctx, pane, ind) {
   const sp = ch.spacing;
   for (const p of ind.res.out.plots) {
-    if (p.display === 'none' || (ind.hidden && ind.hidden[p.id])) continue;
+    if (!(p.display & 1) || (ind.hidden && ind.hidden[p.id])) continue;
     const st = p.style || 'line';
     const lw = Math.max(1, p.lineWidth || 1);
     const base = ch.yOf(pane, p.histbase || 0);
@@ -163,7 +163,7 @@ export function drawPlots(ch, ctx, pane, ind) {
   }
   // plotcandle / plotbar
   for (const cd of ind.res.out.candles) {
-    if (cd.display === 'none') continue;
+    if (!(cd.display & 1)) continue;
     const w = Math.max(1, Math.round(sp * 0.7));
     for (let i = ch.i0; i <= ch.i1; i++) {
       const ri = i - ind.offset;
@@ -193,7 +193,7 @@ export function lastVisible(ind, p, ch) {
 
 export function drawHlines(ch, ctx, pane, ind) {
   for (const h of ind.res.out.hlines) {
-    if (h.display === 'none' || !isNum(h.price) || (ind.hidden && ind.hidden[h.id])) continue;
+    if (!(h.display & 1) || !isNum(h.price) || (ind.hidden && ind.hidden[h.id])) continue;
     const c = css(h.color); if (!c) continue;
     const y = Math.round(ch.yOf(pane, h.price)) + 0.5;
     ctx.strokeStyle = c; ctx.lineWidth = h.lineWidth || 1;
@@ -238,7 +238,7 @@ function textLines(ctx, text, x, y, color, px, align = 'center', base = 'middle'
 export function drawShapes(ch, ctx, pane, ind, bars) {
   const isMain = pane.id === 'main';
   for (const sh of ind.res.out.shapes) {
-    if (sh.display === 'none' || (ind.hidden && ind.hidden[sh.id])) continue;
+    if (!(sh.display & 1) || (ind.hidden && ind.hidden[sh.id])) continue;
     const s = SIZE_PX[sh.size] || 10;
     let maxAbs = 0;
     if (sh.kind === 'arrow') for (let i = ch.i0; i <= ch.i1; i++) { const v = plotVal(ind, sh, i); if (isNum(v)) maxAbs = Math.max(maxAbs, Math.abs(v)); }
@@ -524,12 +524,12 @@ export function indicatorRange(ch, ind, pane, out) {
   let lo = out[0], hi = out[1];
   const upd = (v) => { if (isNum(v)) { if (v < lo) lo = v; if (v > hi) hi = v; } };
   for (const p of ind.res.out.plots) {
-    if (p.display === 'none' || (ind.hidden && ind.hidden[p.id])) continue;
+    if (!(p.display & 1) || (ind.hidden && ind.hidden[p.id])) continue;
     for (let i = ch.i0; i <= ch.i1; i++) upd(plotVal(ind, p, i));
     if ((p.style === 'histogram' || p.style === 'columns' || p.style === 'area') && pane.id !== 'main') upd(p.histbase || 0);
   }
   if (pane.id !== 'main') {
-    for (const h of ind.res.out.hlines) if (h.display !== 'none') upd(h.price);
+    for (const h of ind.res.out.hlines) if (h.display & 1) upd(h.price);
     for (const cd of ind.res.out.candles) for (let i = ch.i0; i <= ch.i1; i++) { const ri = i - ind.offset; upd(cd.h[ri]); upd(cd.l[ri]); }
     for (const sh of ind.res.out.shapes) if (sh.location === 'absolute') for (let i = ch.i0; i <= ch.i1; i++) upd(plotVal(ind, sh, i));
   }

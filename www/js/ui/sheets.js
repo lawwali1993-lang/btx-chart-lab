@@ -378,7 +378,7 @@ export function initSheets(app) {
         h('button', { class: 'ib play', title: 'تشغيل/إيقاف', onclick: () => app.togglePlay() }, '▶'),
         h('button', { class: 'ib', title: 'خطوة', onclick: () => { app.stopPlay(); app.stepReplay(1); } }, '⏭'),
         h('select', { class: 'speed', title: 'السرعة', onchange: (e) => { r.speed = +e.target.value; } }, [1, 2, 3, 5, 10, 20, 50, 100, 300].map((x) => h('option', { value: x, selected: r.speed === x }, x + 'x'))),
-        h('select', { class: 'unit', title: 'وحدة الخطوة', onchange: (e) => { r.unit = e.target.value; } }, h('option', { value: 'bar', selected: r.unit === 'bar' }, 'شمعة'), h('option', { value: 'base', selected: r.unit === 'base' }, '1m')),
+        h('select', { class: 'unit', title: 'وحدة الخطوة', onchange: (e) => { r.unit = e.target.value; } }, h('option', { value: 'bar', selected: r.unit === 'bar' }, 'شمعة'), h('option', { value: 'base', selected: r.unit === 'base' }, app.baseSeconds === 60 ? '1m' : 'أساس')),
         h('span', { class: 'rtime' }, ''));
     }
     bar.querySelector('.play').textContent = r.playing ? '⏸' : '▶';
