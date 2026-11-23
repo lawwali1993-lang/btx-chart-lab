@@ -40,8 +40,8 @@ body.no-tools #tools { display: none; }
 .chart-overlay { z-index: 2; }
 .legends { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; width: 100%; }
 .legend-pane { position: absolute; left: 6px; display: flex; flex-direction: column; gap: 1px; }
-.legend-main { font-size: 12px; color: var(--fg2); pointer-events: none; text-shadow: 0 0 3px var(--bg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.legend-main i, .lg-vals i { font-style: normal; margin: 0 3px 0 1px; color: var(--fg); }
+.legend-main { font-size: 11px; color: var(--fg2); pointer-events: none; text-shadow: 0 0 3px var(--bg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legend-main i, .lg-vals i { font-style: normal; margin: 0 2px 0 1px; color: var(--fg); }
 .legend-main .lg-sym { color: var(--fg); font-size: 13px; }
 .legend-main .lg-tf { color: var(--fg2); }
 .lg-live { color: #ff9800; }

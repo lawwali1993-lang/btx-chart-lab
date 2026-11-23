@@ -685,7 +685,13 @@ export class Chart {
       const p = this.panes[k];
       if (Math.abs(y - (p.top - SEP / 2)) < 10 && x < this.W) { this.drag = { type: 'sep', k, y0: y, r0: this.panes[k - 1].ratio, r1: p.ratio, h0: this.panes[k - 1].h, h1: p.h }; return; }
     }
-    if (x > this.W && y < this.H) { this.drag = { type: 'pscale', pane, y0: y, min: pane.vmin, max: pane.vmax }; pane.auto = false; return; }
+    if (x > this.W && y < this.H) {
+      const now = performance.now();
+      if (this._lastAxisTap && now - this._lastAxisTap < 320) { pane.auto = true; this._lastAxisTap = 0; this.invalidate(); return; }
+      this._lastAxisTap = now;
+      this.drag = { type: 'pscale', pane, y0: y, min: pane.vmin, max: pane.vmax, wasAuto: pane.auto };
+      return;
+    }
     if (y > this.H) { this.drag = { type: 'tscale', x0: x, sp: this.spacing }; return; }
     if (this.replayPick) { this.setCross(x, y); this.drag = { type: 'pick' }; return; }
     // drawing tool active
@@ -755,6 +761,8 @@ export class Chart {
       case 'cross': case 'pick': this.setCross(x, y); break;
       case 'pscale': {
         const p = g.pane;
+        if (Math.abs(y - g.y0) < 3 && g.wasAuto) return;
+        p.auto = false;
         const f = Math.exp((y - g.y0) / 120);
         const mid = (g.min + g.max) / 2, half = (g.max - g.min) / 2 * f;
         p.vmin = mid - half; p.vmax = mid + half;

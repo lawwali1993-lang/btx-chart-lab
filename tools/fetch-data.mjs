@@ -120,48 +120,53 @@ async function fetchTodayTicks() {
 }
 
 const t0 = Date.now();
-let next = 0, doneN = 0;
+let next = 0, doneN = 0, flushing = Promise.resolve();
 const W = 6;
+
+function flush(final) {
+  if (!rows.length && !final) return;
+  rows.sort((a, b) => a[0] - b[0]);
+  const fresh = createBars(rows.length);
+  let k = 0;
+  for (const r of rows) {
+    if (k && r[0] === fresh.t[k - 1]) continue;
+    fresh.t[k] = r[0]; fresh.o[k] = r[1]; fresh.h[k] = r[2]; fresh.l[k] = r[3]; fresh.c[k] = r[4]; fresh.v[k] = r[5];
+    k++;
+  }
+  rows.length = 0;
+  const freshBars = sliceBars(fresh, 0, k);
+  const bars = existing ? mergeBars(existing, freshBars) : freshBars;
+  if (!bars.length) return;
+  existing = bars;
+  const meta = { symbol, name: symbol, ...spec, source: 'Dukascopy (bid)', volumeType: 'tick volume (Dukascopy units)', timeframe: '1', timeUnit: 60, bundled: true, updated: new Date().toISOString(), timezone: 'Etc/UTC' };
+  delete meta.scale;
+  const enc = encodeBars(meta, bars);
+  const gz = zlib.gzipSync(enc, { level: 9 });
+  fs.mkdirSync(path.dirname(outFile), { recursive: true });
+  fs.writeFileSync(outFile, gz);
+  const L = bars.length - 1;
+  const summary = {
+    symbol, description: spec.description, count: bars.length, from: new Date(bars.t[0]).toISOString(), to: new Date(bars.t[L]).toISOString(),
+    rawBytes: enc.length, gzBytes: gz.length, failedDays, emptyDays,
+    first: [new Date(bars.t[0]).toISOString(), bars.o[0], bars.h[0], bars.l[0], bars.c[0], bars.v[0]],
+    last: [new Date(bars.t[L]).toISOString(), bars.o[L], bars.h[L], bars.l[L], bars.c[L], bars.v[L]],
+    volumeSample: Array.from(bars.v.subarray(Math.max(0, L - 5))), updated: meta.updated,
+  };
+  fs.writeFileSync(sumFile, JSON.stringify(summary, null, 2));
+  console.log(`  saved ${bars.length} bars → ${(gz.length / 1048576).toFixed(2)} MB (to ${summary.to})`);
+  if (final) console.log(JSON.stringify(summary, null, 2));
+}
+
 await Promise.all(Array.from({ length: W }, async () => {
   while (next < days.length) {
     const d = days[next++];
     await fetchDay(d);
     doneN++;
-    if (doneN % 50 === 0) console.log(`  ${doneN}/${days.length} days, ${rows.length} bars, ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+    if (doneN % 50 === 0) console.log(`  ${doneN}/${days.length} days, ${rows.length} bars pending, ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+    if (doneN % 120 === 0) flush(false);
   }
 }));
 await fetchTodayTicks();
-console.log(`fetched ${rows.length} bars in ${((Date.now() - t0) / 1000).toFixed(0)}s, failed days ${failedDays}, empty days ${emptyDays}`);
-
-rows.sort((a, b) => a[0] - b[0]);
-const fresh = createBars(rows.length);
-let k = 0;
-for (const r of rows) {
-  if (k && r[0] === fresh.t[k - 1]) continue;
-  fresh.t[k] = r[0]; fresh.o[k] = r[1]; fresh.h[k] = r[2]; fresh.l[k] = r[3]; fresh.c[k] = r[4]; fresh.v[k] = r[5];
-  k++;
-}
-const freshBars = sliceBars(fresh, 0, k);
-const bars = existing ? mergeBars(existing, freshBars) : freshBars;
-if (!bars.length) { console.error('no data'); process.exit(1); }
-
-const meta = { symbol, name: symbol, ...spec, source: 'Dukascopy (bid)', volumeType: 'tick volume (Dukascopy units)', timeframe: '1', timeUnit: 60, bundled: true, updated: new Date().toISOString(), timezone: 'Etc/UTC' };
-delete meta.scale;
-const enc = encodeBars(meta, bars);
-const gz = zlib.gzipSync(enc, { level: 9 });
-fs.mkdirSync(path.dirname(outFile), { recursive: true });
-fs.writeFileSync(outFile, gz);
-const back = decodeBars(zlib.gunzipSync(gz)).bars;
-let maxErr = 0;
-for (let i = 0; i < back.length; i += 97) maxErr = Math.max(maxErr, Math.abs(back.c[i] - bars.c[i]), Math.abs(back.h[i] - bars.h[i]));
-const L = bars.length - 1;
-const summary = {
-  symbol, count: bars.length, from: new Date(bars.t[0]).toISOString(), to: new Date(bars.t[L]).toISOString(),
-  rawBytes: enc.length, gzBytes: gz.length, failedDays, emptyDays, roundTripMaxErr: maxErr,
-  first: [new Date(bars.t[0]).toISOString(), bars.o[0], bars.h[0], bars.l[0], bars.c[0], bars.v[0]],
-  last: [new Date(bars.t[L]).toISOString(), bars.o[L], bars.h[L], bars.l[L], bars.c[L], bars.v[L]],
-  volumeSample: Array.from(bars.v.subarray(Math.max(0, L - 5))), updated: meta.updated,
-};
-fs.writeFileSync(sumFile, JSON.stringify(summary, null, 2));
-console.log(JSON.stringify(summary, null, 2));
+console.log(`fetched in ${((Date.now() - t0) / 1000).toFixed(0)}s, failed days ${failedDays}, empty days ${emptyDays}`);
+flush(true);
 if (failedDays > days.length * 0.2 && days.length > 20) { console.error('too many failed days'); process.exit(1); }

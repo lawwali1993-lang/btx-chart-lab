@@ -38,7 +38,7 @@ export class Editor {
     this.cb = cb;
     this.name = h('span', { class: 'name' }, 'سكربت جديد');
     const bar = h('div', { class: 'ed-bar' },
-      h('button', { class: 'btn sm pri', onclick: () => cb.onRun(this.value()) }, '▶ إضافة/تحديث على الشارت'),
+      h('button', { class: 'btn sm pri', onclick: () => cb.onRun(this.value()) }, '▶ تشغيل على الشارت'),
       h('button', { class: 'btn sm', onclick: () => cb.onSave(this.value()) }, 'حفظ'),
       h('button', { class: 'btn sm', onclick: () => cb.onOpen() }, 'فتح'),
       h('button', { class: 'btn sm', onclick: () => cb.onNew() }, 'جديد'),

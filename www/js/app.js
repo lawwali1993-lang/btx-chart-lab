@@ -632,6 +632,7 @@ class App {
 
 const app = new App();
 window.app = app;
-app.boot().catch((e) => { console.error(e); toast('خطأ في التشغيل: ' + e.message, 6000); });
+const __t0 = performance.now();
+app.boot().then(() => { window.__bootMs = Math.round(performance.now() - __t0); }).catch((e) => { console.error(e); toast('خطأ في التشغيل: ' + e.message, 6000); });
 export default app;
 void bucketStart; void anySheet; void sheet;

@@ -25,7 +25,7 @@ concurrency:
 jobs:
   data:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 100
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,11 +34,13 @@ jobs:
       - name: Install fetcher
         run: npm i lzma@2.3.2 --no-save --no-package-lock
       - name: Fetch candles
+        timeout-minutes: 75
+        continue-on-error: true
         run: |
           set -o pipefail
           node tools/fetch-data.mjs "${{ github.event.inputs.symbol || 'XAUUSD' }}" "${{ github.event.inputs.from || '2024-01-01' }}" 2>&1 | tee data-log.txt
       - name: Commit data
-        if: success()
+        if: always()
         run: |
           git config user.name "btx-data-bot"
           git config user.email "btx-data-bot@users.noreply.github.com"

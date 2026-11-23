@@ -13,7 +13,8 @@ async def main():
             page.on('console', lambda m: errs.append(f'{m.type}: {m.text}') if m.type in ('error', 'warning') else None)
             page.on('pageerror', lambda e: errs.append('pageerror: ' + str(e)))
             await page.goto(f'http://localhost:{PORT}/index.html')
-            await page.wait_for_timeout(2500)
+            await page.wait_for_function('window.app && window.app.base && window.app.inds.length && window.app.inds[0].res', timeout=60000)
+            await page.wait_for_timeout(300)
             await page.screenshot(path='/tmp/ui1.png')
             script = sys.argv[1] if len(sys.argv) > 1 else ''
             if script:
