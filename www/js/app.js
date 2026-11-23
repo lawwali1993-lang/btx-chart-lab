@@ -239,10 +239,12 @@ class App {
   }
 
   async ensureSecuritySymbols(ast) {
+    let loaded = false;
     for (const s of scanSecuritySymbols(ast)) {
       if (s === this.state.symbol || store.cached(s)) continue;
-      if (this.symbols.some((x) => x.name === s)) { try { await store.loadSymbol(s); } catch (e) { /* */ } }
+      if (this.symbols.some((x) => x.name === s)) { try { await store.loadSymbol(s); loaded = true; } catch (e) { /* */ } }
     }
+    return loaded;
   }
 
   runInd(inst, incremental = false) {
@@ -252,7 +254,7 @@ class App {
     try {
       if (!inst.ast) {
         inst.ast = parse(inst.source);
-        this.ensureSecuritySymbols(inst.ast).then(() => { if (inst.needsRerun) { inst.needsRerun = false; this.runInd(inst); this.pushIndicators(); } });
+        this.ensureSecuritySymbols(inst.ast).then((loaded) => { if (loaded && this.inds.includes(inst)) { inst.rt = null; this.runInd(inst); this.pushIndicators(); } });
       }
       const n = view.bars.length;
       const start = this.calcRange();
