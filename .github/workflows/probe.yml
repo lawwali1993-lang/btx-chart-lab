@@ -12,7 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Probe
+        shell: bash
         run: |
+          set +e
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36"
           for u in \
             "https://datafeed.dukascopy.com/datafeed/XAUUSD/2024/00/02/BID_candles_min_1.bi5" \
@@ -24,7 +26,7 @@ jobs:
             "https://candledata.fxcorporate.com/m1/EURUSD/2024/1.csv.gz" \
             "https://www.histdata.com/download-free-forex-historical-data/?/ascii/1-minute-bar-quotes/xauusd/2024" \
             "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1m&range=5d" ; do
-            code=$(curl -s -L -A "$UA" -o /tmp/out.bin -w "%{http_code} %{size_download}" --max-time 40 "$u")
+            code=$(curl -s -L -A "$UA" -o /tmp/out.bin -w "%{http_code} %{size_download}" --max-time 40 "$u" || echo "ERR$?")
             echo "$code $u" | tee -a probe.txt
             head -c 120 /tmp/out.bin | xxd | head -3 >> probe.txt
           done
