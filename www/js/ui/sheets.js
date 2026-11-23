@@ -20,6 +20,7 @@ export function initSheets(app) {
         it('ƒx', 'المؤشرات والاستراتيجيات', 'المدمجة + سكربتاتك', () => S.indicators()),
         it('📝', 'سكربتاتي', 'سكربتات Pine المحفوظة', () => S.openScript()),
         it('⏪', 'إعادة التشغيل (Replay)', 'تدريب شمعة بشمعة', () => S.replayMenu()),
+        it('📅', 'الانتقال إلى تاريخ', 'عرض الشارت عند تاريخ معين', () => S.gotoDate()),
         it('💰', 'حساب التدريب', 'الرصيد، الرافعة، السنت، العمولة، السبريد', () => app.panels.accountSettings()),
         it('⚙', 'الإعدادات', 'المظهر، المنطقة الزمنية، الجلسة، الأداء', () => S.settings()),
         it('💾', 'نسخ احتياطي / استعادة', 'السكربتات والرسومات والإعدادات', () => S.backup()),
@@ -348,6 +349,11 @@ export function initSheets(app) {
         s.close();
       } }, 'حفظ')],
     });
+  };
+
+  S.gotoDate = () => {
+    const dt = h('input', { type: 'datetime-local', style: { width: '100%' } });
+    const s = sheet({ title: 'الانتقال إلى تاريخ', body: dt, footer: [h('button', { class: 'btn pri', style: { flex: 1 }, onclick: () => { const t = Date.parse(dt.value + 'Z') - app.state.tzMin * 60000; if (!isFinite(t)) { toast('اختر التاريخ'); return; } s.close(); app.chart.scrollToTime(t); } }, 'انتقال')] });
   };
 
   // ================================================================ replay

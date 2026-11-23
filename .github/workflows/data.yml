@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       symbol:
-        description: 'Symbol (XAUUSD, XAGUSD, EURUSD, BTCUSD)'
+        description: 'Symbol (XAUUSD, XAGUSD, EURUSD, GBPUSD, BTCUSD)'
         default: 'XAUUSD'
       from:
-        description: 'From date (YYYY-MM-DD)'
-        default: '2024-01-01'
+        description: 'From month (YYYY-MM)'
+        default: '2024-01'
   push:
     branches: [main]
-    paths: ['tools/fetch-data.mjs', '.github/workflows/data.yml']
+    paths: ['tools/duka.mjs', 'tools/fetch-month.mjs', 'tools/data-plan.mjs', 'tools/merge-data.mjs', '.github/workflows/data.yml']
   schedule:
     - cron: '17 3 * * 1'
 
@@ -22,42 +22,82 @@ concurrency:
   group: data
   cancel-in-progress: false
 
+env:
+  SYMBOL: ${{ github.event.inputs.symbol || 'XAUUSD' }}
+  FROM: ${{ github.event.inputs.from || '2024-01' }}
+
 jobs:
-  data:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    outputs:
+      months: ${{ steps.p.outputs.months }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install fetcher
-        run: npm i lzma@2.3.2 --no-save --no-package-lock
-      - name: Fetch candles
-        timeout-minutes: 75
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          node tools/fetch-data.mjs "${{ github.event.inputs.symbol || 'XAUUSD' }}" "${{ github.event.inputs.from || '2024-01-01' }}" 2>&1 | tee data-log.txt
-      - name: Commit data
+      - run: npm i lzma@2.3.2 --no-save --no-package-lock
+      - id: p
+        run: echo "months=$(node tools/data-plan.mjs $SYMBOL $FROM)" >> "$GITHUB_OUTPUT"
+
+  fetch:
+    needs: plan
+    if: needs.plan.outputs.months != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 18
+      matrix:
+        month: ${{ fromJSON(needs.plan.outputs.months) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm i lzma@2.3.2 --no-save --no-package-lock
+      - name: Fetch month
+        timeout-minutes: 50
+        run: node tools/fetch-month.mjs $SYMBOL ${{ matrix.month }} chunk/${SYMBOL}_${{ matrix.month }}.btxd
+      - name: Push chunk branch
         if: always()
+        run: |
+          [ -f chunk/${SYMBOL}_${{ matrix.month }}.btxd ] || { echo "no chunk"; exit 0; }
+          mkdir /tmp/c && cp chunk/*.btxd /tmp/c/ && cd /tmp/c
+          git init -q && git checkout -q -b chunk-${SYMBOL}-${{ matrix.month }}
+          git config user.name "btx-data-bot"; git config user.email "btx-data-bot@users.noreply.github.com"
+          git add . && git commit -q -m "chunk ${{ matrix.month }}"
+          for i in 1 2 3 4 5; do git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD && break || sleep $((i*3)); done
+
+  merge:
+    needs: [plan, fetch]
+    if: always() && needs.plan.outputs.months != '[]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm i lzma@2.3.2 --no-save --no-package-lock
+      - name: Collect chunks
+        run: |
+          mkdir -p chunks
+          for b in $(git ls-remote --heads origin "chunk-${SYMBOL}-*" | awk '{print $2}' | sed 's#refs/heads/##'); do
+            git fetch -q --depth 1 origin "$b:refs/remotes/origin/$b" && git --work-tree=chunks checkout "origin/$b" -- . && echo "got $b"
+          done
+          git reset -q
+          ls -la chunks
+      - name: Merge
+        run: node tools/merge-data.mjs $SYMBOL chunks
+      - name: Commit data
         run: |
           git config user.name "btx-data-bot"
           git config user.email "btx-data-bot@users.noreply.github.com"
           git add data/*.btxd data/*.json
-          git commit -m "data: update $(date -u +%F)" || echo "no changes"
-          git pull --rebase origin main || true
-          git push origin HEAD:main
-      - name: Save log
-        if: always()
+          git commit -m "data: $SYMBOL update $(date -u +%F)" || { echo "no changes"; exit 0; }
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && break || sleep 5; done
+      - name: Delete chunk branches
         run: |
-          git config user.name "btx-data-bot"
-          git config user.email "btx-data-bot@users.noreply.github.com"
-          mkdir -p /tmp/logs && cp data-log.txt /tmp/logs/data-log.txt 2>/dev/null || echo "no log" > /tmp/logs/data-log.txt
-          git fetch origin ci-logs || true
-          git checkout -B ci-logs origin/ci-logs 2>/dev/null || git checkout --orphan ci-logs
-          git rm -rf --cached . >/dev/null 2>&1 || true
-          cp /tmp/logs/data-log.txt data-log.txt
-          git add data-log.txt
-          git commit -m "log: data ${{ github.run_id }}" || true
-          git push -f origin ci-logs
+          for b in $(git ls-remote --heads origin "chunk-${SYMBOL}-*" | awk '{print $2}' | sed 's#refs/heads/##'); do git push -q origin --delete "$b" || true; done
