@@ -1,0 +1,5 @@
+days to fetch: 906
+  503 (try 3) https://datafeed.dukascopy.com/datafeed/XAUUSD/2024/00/10/BID_candles_min_1.bi5
+  503 (try 4) https://datafeed.dukascopy.com/datafeed/XAUUSD/2024/00/10/BID_candles_min_1.bi5
+  503 (try 3) https://datafeed.dukascopy.com/datafeed/XAUUSD/2024/00/15/BID_candles_min_1.bi5
+  503 (try 3) https://datafeed.dukascopy.com/datafeed/XAUUSD/2024/00/18/BID_candles_min_1.bi5
