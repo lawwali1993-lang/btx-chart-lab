@@ -1,0 +1,61 @@
+name: Update market data
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: 'Symbol (XAUUSD, XAGUSD, EURUSD, BTCUSD)'
+        default: 'XAUUSD'
+      from:
+        description: 'From date (YYYY-MM-DD)'
+        default: '2024-01-01'
+  push:
+    branches: [main]
+    paths: ['tools/fetch-data.mjs', '.github/workflows/data.yml']
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data
+  cancel-in-progress: false
+
+jobs:
+  data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install fetcher
+        run: npm i dukascopy-node@1.51.1 --no-save --no-package-lock
+      - name: Fetch candles
+        run: |
+          set -o pipefail
+          node tools/fetch-data.mjs "${{ github.event.inputs.symbol || 'XAUUSD' }}" "${{ github.event.inputs.from || '2024-01-01' }}" 2>&1 | tee data-log.txt
+      - name: Commit data
+        if: success()
+        run: |
+          git config user.name "btx-data-bot"
+          git config user.email "btx-data-bot@users.noreply.github.com"
+          git add data/*.btxd data/*.json
+          git commit -m "data: update $(date -u +%F)" || echo "no changes"
+          git pull --rebase origin main || true
+          git push origin HEAD:main
+      - name: Save log
+        if: always()
+        run: |
+          git config user.name "btx-data-bot"
+          git config user.email "btx-data-bot@users.noreply.github.com"
+          mkdir -p /tmp/logs && cp data-log.txt /tmp/logs/data-log.txt 2>/dev/null || echo "no log" > /tmp/logs/data-log.txt
+          git fetch origin ci-logs || true
+          git checkout -B ci-logs origin/ci-logs 2>/dev/null || git checkout --orphan ci-logs
+          git rm -rf --cached . >/dev/null 2>&1 || true
+          cp /tmp/logs/data-log.txt data-log.txt
+          git add data-log.txt
+          git commit -m "log: data ${{ github.run_id }}" || true
+          git push -f origin ci-logs
