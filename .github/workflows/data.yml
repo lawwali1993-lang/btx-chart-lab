@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: 20
       - name: Install fetcher
-        run: npm i dukascopy-node@1.51.1 --no-save --no-package-lock
+        run: npm i lzma@2.3.2 --no-save --no-package-lock
       - name: Fetch candles
         run: |
           set -o pipefail

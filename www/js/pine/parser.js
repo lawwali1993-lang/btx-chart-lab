@@ -169,6 +169,7 @@ export function parse(src) {
   function endStmt() {
     const t = peek();
     if (t.t === 'nl') { p++; return; }
+    if (t.t === 'op' && t.v === ',') { p++; return; }
     if (t.t === 'eof' || t.t === 'dedent') return;
     const prev = toks[p - 1];
     if (prev && (prev.t === 'dedent' || prev.t === 'nl')) return;
