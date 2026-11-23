@@ -584,6 +584,7 @@ Object.assign(K, { 'session.regular': 'regular', 'session.extended': 'extended',
 def('ticker.new', ['prefix', 'ticker', 'session', 'adjustment'], (rt, s, p, t) => p + ':' + t);
 def('ticker.standard', ['symbol'], (rt, s, x) => (x === undefined ? rt.tickerid() : String(x).replace(/^HA:/, '')));
 def('ticker.heikinashi', ['symbol'], (rt, s, x) => 'HA:' + String(x === undefined ? rt.sym.name : x).replace(/^.*:/, ''));
+V4_ALIASES.heikinashi = 'ticker.heikinashi';
 def('ticker.modify', ['tickerid', 'session', 'adjustment'], (rt, s, x) => x);
 def('ticker.inherit', ['from_tickerid', 'symbol'], (rt, s, a, b) => b);
 for (const k of ['renko', 'linebreak', 'kagi', 'pointfigure']) def('ticker.' + k, ['symbol'], (rt, s, x) => x);

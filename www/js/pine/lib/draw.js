@@ -31,7 +31,7 @@ function reg(rt, list, factory) {
 const PLOT_P = ['series', 'title', 'color', 'linewidth', 'style', 'trackprice', 'histbase', 'offset', 'join', 'editable', 'show_last', 'display', 'format', 'precision', 'force_overlay'];
 def('plot', PLOT_P, (rt, s, series, title, color, lw, style, track, histbase, offset, join, editable, showLast, display, format, precision) => {
   if (rt.isSub) return { __plot: -1 };
-  const r = reg(rt, 'plots', () => ({ kind: 'plot', title: title ?? 'Plot', style: style || 'line', lineWidth: num(lw, 1) || 1, values: rt.newArr(), offset: num(offset, 0) || 0, trackprice: truthy(track), histbase: num(histbase, 0) || 0, join: truthy(join), display: display || 'all', format, precision, showLast: showLast }));
+  const r = reg(rt, 'plots', () => ({ kind: 'plot', title: title ?? 'Plot', style: typeof style === 'string' ? style : 'line', lineWidth: num(lw, 1) || 1, values: rt.newArr(), offset: num(offset, 0) || 0, trackprice: truthy(track), histbase: num(histbase, 0) || 0, join: truthy(join), display: display || 'all', format, precision, showLast: showLast }));
   let v = series;
   if (typeof v === 'boolean') v = v ? 1 : 0;
   r.values[rt.i] = typeof v === 'number' ? v : NaN;

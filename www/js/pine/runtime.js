@@ -54,6 +54,7 @@ export class PineRuntime {
     this.tf = opts.tf || parseTf('1');
     this.align = opts.align || { mode: 'utc', offsetMin: 0 };
     this.isSub = !!opts.isSub;
+    this.subKey = opts.subKey || null;
     this.inputValues = opts.inputs || [];
     this.inputDefs = [];
     this.inputCount = 0;
@@ -341,11 +342,11 @@ export class PineRuntime {
       const callee = node.callee;
       if (callee.type === 'Ident') {
         const name = callee.name;
-        if (lookup(scope, name)) err(node, `'${name}' متغير وليس دالة`);
         if (rt.funcs[name]) return callUser(rt.funcs[name], node, scope);
         let bn = name;
         if (!B[bn] && V4_ALIASES[bn]) bn = V4_ALIASES[bn];
         if (B[bn]) return callBuiltin(bn, node, scope);
+        if (lookup(scope, name)) err(node, `'${name}' متغير وليس دالة`);
         err(node, `دالة غير معروفة '${name}'`);
       }
       if (callee.type === 'Member') {
@@ -684,6 +685,7 @@ export class PineRuntime {
   // --------------------------------------------------------------- execution
   /** Execute bars [done, upTo). Returns this. */
   run(upTo = this.n) {
+    this.formingObjs = null; this.formingBroker = null;
     const root = this.S.root;
     const hs = this.rootInfo.histSlots;
     for (let i = this.done; i < upTo; i++) {
@@ -773,6 +775,7 @@ export class PineRuntime {
       st = f.s['sec' + key] = {};
       const sameSym = !symbol || symbol === this.sym.name || symbol === this.tickerid() || symbol === this.sym.tickerid;
       let tf = tfStr ? parseTf(tfStr) : this.tf;
+      st.reqKey = (sameSym ? this.sym.name : symbol) + '|' + (tf ? tf.period : '');
       if (!tf) throw new RuntimeErr(`إطار زمني غير صالح '${tfStr}'`);
       const ha = typeof symbol === 'string' && symbol.startsWith('HA:');
       if ((sameSym && !ha && tf.seconds === this.tf.seconds && tf.kind === this.tf.kind) || this.isSub) { st.mode = 'same'; }
@@ -785,7 +788,7 @@ export class PineRuntime {
     }
     if (st.mode === 'same') {
       const v = exprCode(f);
-      if (this.captures) (this.captures[nodeId] || (this.captures[nodeId] = []))[this.i] = v;
+      if (this.captures && (!this.subKey || st.reqKey === this.subKey)) (this.captures[nodeId] || (this.captures[nodeId] = []))[this.i] = v;
       return v;
     }
     if (!st.run) {
@@ -795,7 +798,7 @@ export class PineRuntime {
         const got = this.opts.getBars ? this.opts.getBars(st.ha ? st.symbol.slice(3) : st.symbol, st.tf, this.t[this.n - 1], st.ha) : null;
         if (!got || !got.bars || !got.bars.length) { st.mode = 'na'; this.warnings.push(`لا توجد بيانات للرمز ${st.symbol} — request.security يعيد na`); }
         else {
-          sub = new PineRuntime({ ...this.opts, ast: this.ast, bars: got.bars, tf: st.tf, symbol: got.symbol || this.sym, isSub: true, captureIds: true, inputs: this.inputValues, maxBars: undefined });
+          sub = new PineRuntime({ ...this.opts, ast: this.ast, bars: got.bars, tf: st.tf, symbol: { ...this.sym, ...(got.symbol || {}) }, isSub: true, captureIds: true, inputs: this.inputValues, maxBars: undefined, subKey: st.symbol + '|' + st.tf.period });
           sub.run();
           this.securityRuns[runKey] = sub;
         }

@@ -1,0 +1,6 @@
+//@version=5
+strategy("Trailing test", overlay = true, initial_capital = 10000)
+enter = ta.crossover(ta.ema(close, 9), ta.ema(close, 21))
+if enter and strategy.position_size == 0
+    strategy.entry("L", strategy.long, qty = 1)
+strategy.exit("TS", "L", trail_points = 100, trail_offset = 50, loss = 300)

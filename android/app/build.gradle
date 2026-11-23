@@ -1,0 +1,39 @@
+plugins { id 'com.android.application' }
+
+def runNo = (System.getenv('GITHUB_RUN_NUMBER') ?: '1') as Integer
+
+android {
+    namespace 'com.btx.chartlab'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.btx.chartlab'
+        minSdk 24
+        targetSdk 35
+        versionCode runNo
+        versionName "1.0." + runNo
+    }
+    signingConfigs {
+        release {
+            storeFile file('../keystore/btx.jks')
+            storePassword 'btxchartlab'
+            keyAlias 'btx'
+            keyPassword 'btxchartlab'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+        debug { signingConfig signingConfigs.release }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    androidResources { noCompress += ['btxd'] }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}

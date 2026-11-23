@@ -1,0 +1,27 @@
+//@version=5
+indicator("MTF Trend Dashboard", overlay = true)
+emaLen = input.int(50, "EMA Length", group = "Settings")
+showTable = input.bool(true, "Show table", group = "Settings")
+type TfRow
+    string tf
+    int dir = 0
+    float dist = na
+method fill(TfRow r) =>
+    [c, e] = request.security(syminfo.tickerid, r.tf, [close, ta.ema(close, emaLen)])
+    r.dir := c > e ? 1 : -1
+    r.dist := (c - e) / syminfo.mintick
+    r
+f(tf) => TfRow.new(tf).fill()
+rows = array.from(f("5"), f("15"), f("60"), f("240"))
+var table t = table.new(position.top_right, 3, 5, bgcolor = color.new(color.black, 30), border_width = 1, border_color = color.gray)
+if barstate.islast and showTable
+    table.cell(t, 0, 0, "TF", text_color = color.white)
+    table.cell(t, 1, 0, "Trend", text_color = color.white)
+    table.cell(t, 2, 0, "Dist (pts)", text_color = color.white)
+    for [i, r] in rows
+        bg = r.dir == 1 ? color.new(color.green, 40) : color.new(color.red, 40)
+        table.cell(t, 0, i + 1, r.tf, text_color = color.white)
+        table.cell(t, 1, i + 1, r.dir == 1 ? "▲ UP" : "▼ DOWN", bgcolor = bg, text_color = color.white)
+        table.cell(t, 2, i + 1, str.tostring(r.dist, "#"), text_color = color.white)
+plot(ta.ema(close, emaLen), "EMA", color.orange)
+log.info("last close {0}", close)

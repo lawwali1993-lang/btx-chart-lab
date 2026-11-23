@@ -6,3 +6,5 @@ android/local.properties
 android/app/src/main/assets/www/
 *.apk
 /tmp/
+www/data/
+www/js/build.js

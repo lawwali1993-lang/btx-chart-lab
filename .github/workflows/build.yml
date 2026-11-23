@@ -1,0 +1,75 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['README.md']
+  workflow_run:
+    workflows: ['Update market data']
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Unit tests
+        run: |
+          for t in binfmt data pine-basic pine-adv builtins account compat; do node tests/$t.test.mjs > /tmp/t.log 2>&1 && echo "PASS $t" || { echo "FAIL $t"; cat /tmp/t.log; exit 1; }; done
+      - name: Prepare web assets
+        env:
+          BUILD_ID: ${{ github.run_number }} (${{ github.sha }})
+        run: |
+          node tools/build-web.mjs
+          rm -rf android/app/src/main/assets/www
+          mkdir -p android/app/src/main/assets
+          cp -r www android/app/src/main/assets/www
+          du -sh android/app/src/main/assets/www
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build release APK
+        run: gradle -p android assembleRelease --no-daemon --stacktrace
+      - name: Collect APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk out/BTX-Chart-Lab-v1.0.${{ github.run_number }}.apk
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BTX-Chart-Lab-apk
+          path: out/*.apk
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: BTX Chart Lab v1.0.${{ github.run_number }}
+          files: out/*.apk
+          body: 'APK مبني تلقائياً. حمّل الملف وثبّته على أندرويد.'
+      - name: Push APK branch
+        run: |
+          cd out
+          git init -q
+          git config user.name "btx-build-bot"; git config user.email "btx-build-bot@users.noreply.github.com"
+          git checkout -q -b apk
+          git add *.apk
+          git commit -q -m "APK v1.0.${{ github.run_number }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" apk
