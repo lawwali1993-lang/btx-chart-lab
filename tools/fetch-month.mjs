@@ -2,13 +2,20 @@
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 import path from 'node:path';
-import { encodeBars, createBars } from '../www/js/data/binfmt.js';
+import { encodeBars, createBars, decodeBars } from '../www/js/data/binfmt.js';
 import { SPECS, DAY, tradingDays, monthRange, fetchDayCandles, fetchTodayFromTicks, stats, sleep } from './duka.mjs';
 const [sym, ym, outFile] = process.argv.slice(2);
 const spec = SPECS[sym];
 const [a, b] = monthRange(ym);
 const today = Math.floor(Date.now() / DAY) * DAY;
-const days = tradingDays(a, Math.min(b, today));
+// only fetch days missing from the bundled file (plus the last 3 days, which may be incomplete)
+const have = new Map();
+const dataFile = `data/${sym}_M1.btxd`;
+if (fs.existsSync(dataFile)) {
+  const bb = decodeBars(zlib.gunzipSync(fs.readFileSync(dataFile))).bars;
+  for (let i = 0; i < bb.length; i++) { if (bb.t[i] < a || bb.t[i] >= b) continue; const d = Math.floor(bb.t[i] / DAY); have.set(d, (have.get(d) || 0) + 1); }
+}
+const days = tradingDays(a, Math.min(b, today)).filter((d) => !(have.get(d / DAY) > 30) || d >= today - 3 * DAY);
 const rows = [];
 let failed = 0, next = 0;
 const t0 = Date.now();
