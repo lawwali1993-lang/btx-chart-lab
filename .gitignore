@@ -1,10 +1,11 @@
-node_modules/
-android/.gradle/
-android/build/
-android/app/build/
-android/local.properties
-android/app/src/main/assets/www/
 *.apk
 /tmp/
+android/.gradle/
+android/app/build/
+android/app/src/main/assets/www/
+android/build/
+android/local.properties
+node_modules
+node_modules/
 www/data/
 www/js/build.js
