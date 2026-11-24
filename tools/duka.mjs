@@ -15,7 +15,7 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const stats = { req: 0, retries: 0, failed: 0 };
 
-export async function get(url, tries = 10) {
+export async function get(url, tries = 14) {
   for (let a = 1; a <= tries; a++) {
     stats.req++;
     try {
@@ -28,7 +28,7 @@ export async function get(url, tries = 10) {
       if (a >= 4) console.log(`  ${r.status} (try ${a}) ${url.split('/datafeed/')[1]}`);
     } catch (e) { if (a >= 4) console.log(`  net error (try ${a}) ${url.split('/datafeed/')[1]}: ${e.cause ? e.cause.code || e.cause.message : e.message}`); }
     stats.retries++;
-    await sleep(Math.min(45000, 1200 * 2 ** (a - 1)) * (0.6 + Math.random() * 0.8));
+    await sleep(Math.min(60000, 1500 * 2 ** (a - 1)) * (0.6 + Math.random() * 0.8));
   }
   stats.failed++;
   throw new Error('failed ' + url);

@@ -19,7 +19,7 @@ for (const ym of months) {
   const [a, b] = monthRange(ym);
   const days = tradingDays(a, Math.min(b, Math.floor(Date.now() / DAY) * DAY));
   const missing = days.filter((d) => !(have.get(d / DAY) > 30)).length;
-  if (missing > 3 || b > recent) out.push(ym);
+  if (missing >= 2 || b > recent) out.push(ym);
 }
 console.error(`months total ${months.length}, to fetch ${out.length}: ${out.join(' ')}`);
 process.stdout.write(JSON.stringify(out));
