@@ -12,9 +12,10 @@ const days = tradingDays(a, Math.min(b, today));
 const rows = [];
 let failed = 0, next = 0;
 const t0 = Date.now();
+const DEADLINE = t0 + 42 * 60000; // stop starting new days so the partial month is still saved
 await Promise.all(Array.from({ length: 3 }, async (_, w) => {
   await sleep(w * 400);
-  while (next < days.length) {
+  while (next < days.length && Date.now() < DEADLINE) {
     const d = days[next++];
     try { const r = await fetchDayCandles(sym, d); for (const x of r) rows.push(x); }
     catch (e) { failed++; console.log('  day failed', new Date(d).toISOString().slice(0, 10)); }
