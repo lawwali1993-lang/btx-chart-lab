@@ -30,15 +30,6 @@ jobs:
       - name: Unit tests
         run: |
           for t in binfmt data pine-basic pine-adv builtins account compat; do node tests/$t.test.mjs > /tmp/t.log 2>&1 && echo "PASS $t" || { echo "FAIL $t"; cat /tmp/t.log; exit 1; }; done
-      - name: Prepare web assets
-        env:
-          BUILD_ID: ${{ github.run_number }} (${{ github.sha }})
-        run: |
-          node tools/build-web.mjs
-          rm -rf android/app/src/main/assets/www
-          mkdir -p android/app/src/main/assets
-          cp -r www android/app/src/main/assets/www
-          du -sh android/app/src/main/assets/www
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -47,6 +38,8 @@ jobs:
         with:
           gradle-version: '8.11.1'
       - name: Build release APK
+        env:
+          BUILD_ID: ${{ github.run_number }} (${{ github.sha }})
         run: gradle -p android assembleRelease --no-daemon --stacktrace
       - name: Collect APK
         run: |

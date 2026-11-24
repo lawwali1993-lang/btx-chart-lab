@@ -1,6 +1,9 @@
 plugins { id 'com.android.application' }
 
 def runNo = (System.getenv('GITHUB_RUN_NUMBER') ?: '1') as Integer
+def webSrc = rootProject.file('../www')
+def dataSrc = rootProject.file('../data')
+def genAssets = new File(buildDir, 'generated/webassets')
 
 android {
     namespace 'com.btx.chartlab'
@@ -31,8 +34,34 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    sourceSets { main { assets.srcDirs += genAssets } }
     androidResources { noCompress += ['btxd'] }
 }
+
+// Copies the web app (../www) and bundled market data (../data) into the APK assets,
+// so the project builds the same way in Android Studio and in CI.
+tasks.register('prepareWebAssets') {
+    inputs.dir(webSrc)
+    if (dataSrc.exists()) inputs.dir(dataSrc)
+    outputs.dir(genAssets)
+    doLast {
+        project.delete(genAssets)
+        project.copy { from(webSrc) { exclude 'data/**', 'js/build.js' }; into new File(genAssets, 'www') }
+        def dataOut = new File(genAssets, 'www/data')
+        dataOut.mkdirs()
+        def manifest = []
+        (dataSrc.listFiles() ?: []).findAll { it.name.endsWith('.btxd') }.sort { it.name }.each { f ->
+            project.copy { from f; into dataOut }
+            def sumF = new File(dataSrc, f.name.replace('.btxd', '.json'))
+            def sum = sumF.exists() ? new groovy.json.JsonSlurper().parse(sumF) : [:]
+            manifest << [name: f.name.split('_')[0], file: 'data/' + f.name, count: sum.count, from: sum.from, to: sum.to, description: sum.description, bytes: f.length()]
+        }
+        new File(dataOut, 'manifest.json').text = groovy.json.JsonOutput.toJson(manifest)
+        def build = System.getenv('BUILD_ID') ?: ('local ' + new Date().format('yyyy-MM-dd HH:mm'))
+        new File(genAssets, 'www/js/build.js').text = "window.BTX_BUILD = '" + build + "';\n"
+    }
+}
+preBuild.dependsOn 'prepareWebAssets'
 
 dependencies {
     implementation 'androidx.webkit:webkit:1.12.1'

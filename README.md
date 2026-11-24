@@ -21,3 +21,8 @@
 ```
 for t in binfmt data pine-basic pine-adv builtins account compat; do node tests/$t.test.mjs; done
 ```
+
+## البناء من Android Studio (بدون GitHub Actions)
+1. `git clone` للمستودع.
+2. في Android Studio: **File → Open** واختر مجلد `android`.
+3. **Build → Build App Bundle(s) / APK(s) → Build APK(s)** — مهمة `prepareWebAssets` تنسخ تطبيق الويب (`www/`) وبيانات الذهب (`data/`) داخل الـ APK تلقائياً.
